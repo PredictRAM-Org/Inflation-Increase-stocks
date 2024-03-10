@@ -23,10 +23,14 @@ inflation_index = inflation_data[inflation_data['Month'] == selected_month]['Inf
 
 # Load and preprocess stock data
 stock_data = pd.DataFrame()
+
 for file in stock_files:
-    stock = pd.read_csv(os.path.join(stock_folder_path, file))
-    stock['Date'] = pd.to_datetime(stock['Date'])
-    stock_data = pd.concat([stock_data, stock], ignore_index=True)
+    try:
+        stock = pd.read_csv(os.path.join(stock_folder_path, file))
+        stock['Date'] = pd.to_datetime(stock['Date'])
+        stock_data = pd.concat([stock_data, stock], ignore_index=True)
+    except Exception as e:
+        st.warning(f"Error reading file {file}: {e}")
 
 # Merge inflation data with stock data on the 'Date' column
 merged_data = pd.merge(stock_data, inflation_data, how='inner', left_on='Date', right_on='Month')
