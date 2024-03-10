@@ -23,10 +23,15 @@ inflation_index = inflation_data[inflation_data['Month'] == selected_month]['Inf
 
 # Load and preprocess stock data
 stock_data = pd.DataFrame()
-
 for file in stock_files:
     try:
-        stock = pd.read_csv(os.path.join(stock_folder_path, file))
+        # Try reading with 'utf-8', if it fails, try other encodings
+        try:
+            stock = pd.read_csv(os.path.join(stock_folder_path, file), encoding='utf-8')
+        except UnicodeDecodeError:
+            # Try 'latin1' if 'utf-8' fails
+            stock = pd.read_csv(os.path.join(stock_folder_path, file), encoding='latin1')
+
         stock['Date'] = pd.to_datetime(stock['Date'])
         stock_data = pd.concat([stock_data, stock], ignore_index=True)
     except Exception as e:
