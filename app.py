@@ -15,7 +15,7 @@ stock_files = os.listdir(stock_folder_path)
 
 # Display app title and description
 st.title('Stock Analysis App')
-st.write('Analyze which stock increased the most when inflation increased.')
+st.write('Analyze monthly stock price returns and compare them with inflation changes.')
 
 # Sidebar for user input
 selected_month = st.sidebar.selectbox('Select Month:', inflation_data['Month'].unique())
@@ -45,13 +45,16 @@ merged_data = pd.merge(stock_data, inflation_data, how='inner', left_on='Date', 
 merged_data['Inflation Index Lag'] = merged_data['Inflation Index'].shift(1)
 merged_data = merged_data.dropna()
 
+# Calculate monthly stock price returns
+merged_data['Stock Return'] = merged_data.groupby('Stock')['Close'].pct_change() * 100
+
 # Split data into train and test sets
 train_size = int(0.8 * len(merged_data))
 train_data, test_data = merged_data[:train_size], merged_data[train_size:]
 
 # Select features and target variable
 features = ['Open', 'High', 'Low', 'Close', 'Inflation Index Lag']
-target = 'Close'
+target = 'Stock Return'
 
 # Train Random Forest model
 rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
@@ -76,5 +79,10 @@ st.write('Decision Tree RMSE:', dt_rmse)
 
 # Display stock with the highest increase when inflation increased
 st.subheader('Stock with the Highest Increase:')
-stock_with_highest_increase = test_data.loc[test_data['Close'].idxmax()]['Stock']
-st.write(f'The stock with the highest increase when inflation increased is: {stock_with_highest_increase}')
+stock_with_highest_increase = test_data.loc[test_data['Stock Return'].idxmax()]['Stock']
+st.write(f'The stock with the highest increase in monthly return is: {stock_with_highest_increase}')
+
+# Display comparison of stock returns and inflation changes
+st.subheader('Monthly Stock Returns vs. Inflation Changes:')
+comparison_data = test_data[['Date', 'Stock', 'Stock Return', 'Inflation Index Lag']]
+st.line_chart(comparison_data.set_index('Date'))
