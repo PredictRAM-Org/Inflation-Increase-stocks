@@ -25,21 +25,21 @@ inflation_index = inflation_data[inflation_data['Month'] == selected_month]['Inf
 stock_data = pd.DataFrame()
 for file in stock_files:
     try:
-        # Try reading with 'utf-8', if it fails, try other encodings
-        try:
-            stock = pd.read_csv(os.path.join(stock_folder_path, file), encoding='utf-8')
-        except UnicodeDecodeError:
-            # Try 'latin1' if 'utf-8' fails
-            stock = pd.read_csv(os.path.join(stock_folder_path, file), encoding='latin1')
-
-        stock['Date'] = pd.to_datetime(stock['Date'])
+        stock = pd.read_csv(os.path.join(stock_folder_path, file), encoding='utf-8')
+        
+        # Convert date to 'YYYY-MM-DD' format
+        stock['Date'] = pd.to_datetime(stock['Date']).dt.strftime('%Y-%m-%d')
+        
         stock_data = pd.concat([stock_data, stock], ignore_index=True)
+    except pd.errors.ParserError as pe:
+        st.warning(f"Error reading file {file}: {pe}")
+        st.warning(f"Skipping file {file} due to parsing error.")
+        continue
     except Exception as e:
         st.warning(f"Error reading file {file}: {e}")
 
 # Merge inflation data with stock data on the 'Date' column
 merged_data = pd.merge(stock_data, inflation_data, how='inner', left_on='Date', right_on='Month')
-merged_data = merged_data.drop('Month', axis=1)
 
 # Feature engineering: Create lag features for inflation index
 merged_data['Inflation Index Lag'] = merged_data['Inflation Index'].shift(1)
